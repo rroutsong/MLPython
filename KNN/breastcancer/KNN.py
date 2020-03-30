@@ -1,8 +1,16 @@
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import load_breast_cancer, load_boston
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import MinMaxScaler, PolynomialFeatures
+from sklearn.model_selection import train_test_split
+from matplotlib import pyplot as plt
+import mglearn.datasets
+from mglearn.plots import plot_2d_separator
+from mglearn import discrete_scatter
 import numpy as np
 import pandas as pd
 
 """
+    ## classification dataset ##
     Breast cancer wisconsin (diagnostic) dataset
     --------------------------------------------
     
@@ -122,14 +130,124 @@ import pandas as pd
          
     Dataset contains 569 samples with 30 features.
     Each labeled benign or malignant
+    
+    ## regression dataset ##
+
+    Boston house prices dataset
+    ---------------------------
+    
+    **Data Set Characteristics:**
+    
+        :Number of Instances: 506
+    
+        :Number of Attributes: 13 numeric/categorical predictive. Median Value (attribute 14) is usually the target.
+    
+        :Attribute Information (in order):
+            - CRIM     per capita crime rate by town
+            - ZN       proportion of residential land zoned for lots over 25,000 sq.ft.
+            - INDUS    proportion of non-retail business acres per town
+            - CHAS     Charles River dummy variable (= 1 if tract bounds river; 0 otherwise)
+            - NOX      nitric oxides concentration (parts per 10 million)
+            - RM       average number of rooms per dwelling
+            - AGE      proportion of owner-occupied units built prior to 1940
+            - DIS      weighted distances to five Boston employment centres
+            - RAD      index of accessibility to radial highways
+            - TAX      full-value property-tax rate per $10,000
+            - PTRATIO  pupil-teacher ratio by town
+            - B        1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town
+            - LSTAT    % lower status of the population
+            - MEDV     Median value of owner-occupied homes in $1000's
+    
+        :Missing Attribute Values: None
+    
+        :Creator: Harrison, D. and Rubinfeld, D.L.
+    
+    This is a copy of UCI ML housing dataset.
+    https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
+    
+    
+    This dataset was taken from the StatLib library which is maintained at Carnegie Mellon University.
+    
+    The Boston house-price data of Harrison, D. and Rubinfeld, D.L. 'Hedonic
+    prices and the demand for clean air', J. Environ. Economics & Management,
+    vol.5, 81-102, 1978.   Used in Belsley, Kuh & Welsch, 'Regression diagnostics
+    ...', Wiley, 1980.   N.B. Various transformations are used in the table on
+    pages 244-261 of the latter.
+    
+    The Boston house-price data has been used in many machine learning papers that address regression
+    problems.
+    
+    .. topic:: References
+    
+       - Belsley, Kuh & Welsch, 'Regression diagnostics: Identifying Influential Data and Sources of Collinearity', Wiley, 1980. 244-261.
+       - Quinlan,R. (1993). Combining Instance-Based and Model-Based Learning. In Proceedings on the Tenth International Conference of Machine Learning, 236-243, University of Massachusetts, Amherst. Morgan Kaufmann.
 """
 
+
 def main():
+    # categorical dataset
     cancer = load_breast_cancer()
 
+    print('Categorical dataset')
+    print('Example feature data:\n')
+    print(cancer['data'][0])
+    print('\nFeature names:\n')
+    print(cancer['feature_names'])
     print("Sample counts per class:\n{}".format(
         {n: v for n, v in zip(cancer.target_names, np.bincount(cancer.target))}
     ))
+    print('Data size: (' + str(cancer['data'].shape) + ')')
+
+    # regression dataset
+    boston = load_boston()
+    print('Regression dataset')
+    print('Example feature data:\n')
+    print(boston['data'][0])
+    print('\nFeature names:\n')
+    print(boston['feature_names'])
+    print('Data size: (' + str(boston['data'].shape) + ')')
+
+    # we are going to take the boston housing dataset
+    # and create a derived feature set from the product of each feature
+    # MinMaxScaler().fit_transform: Scale all data values to between 0 to 1, fit & return transformed datasets
+    #   see: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html
+    # PolynomialFeatures: create the derived feature set, equal to or less than the degree specified
+    #   degree kwarg: if an input sample is two dimensional and of the form [a, b], the degree-2 polynomial features are [1, a, b, a^2, ab, b^2].  # noqa
+    #   include_bias: include a bias column in the output, column where all polynomial powers are zero, intercept for linear model  # noqa
+    #   see: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
+    Xboston = MinMaxScaler().fit_transform(boston.data)
+    Xboston = PolynomialFeatures(degree=2, include_bias=False).fit_transform(Xboston)
+
+    # forge dataset, toy set
+    Xforge, yforge = mglearn.datasets.make_forge()
+
+
+    ## KNN Classifier ##
+    # using a voting system, specified by the neighbors kwarg                 #
+    # ties in a KNN voting classifier go to the lowest class value in the tie #
+    Xforge_train, Xforge_test, yforge_train, yforge_test = train_test_split(Xforge, yforge, random_state=0)
+    clf = KNeighborsClassifier(n_neighbors=3)
+    clf.fit(Xforge_train, yforge_train)
+
+    print('Forge dataset classification, experiment:')
+    print('KNN, k = 3')
+    print("Test set prediction {}".format(clf.predict(Xforge_test)))
+    print("Test set accuracy {:.2f}".format(clf.score(Xforge_test, yforge_test)))
+
+    # lets visualize the decision boundary of this KNN classifier
+    fig, axes = plt.subplots(1, 3, figsize=(10, 3))
+
+    for n_neighbors, ax in zip([1, 3, 9], axes):
+        clf = KNeighborsClassifier(n_neighbors=n_neighbors).fit(Xforge, yforge)
+        plot_2d_separator(clf, Xforge, fill=True, eps=0.5, ax=ax, alpha=.4)
+        discrete_scatter(Xforge[:, 0], Xforge[:, 1], yforge, ax=ax)
+        ax.set_title("{} neightbor(s)".format(n_neighbors))
+        ax.set_xlabel("feature 0")
+        ax.set_ylabel("feature 1")
+
+    axes[0].legend(loc=3)
+    # View plot in notebook
+    # plt.show(fig)
 
 
 if __name__ == '__main__':
