@@ -179,8 +179,10 @@ import pandas as pd
     
     .. topic:: References
     
-       - Belsley, Kuh & Welsch, 'Regression diagnostics: Identifying Influential Data and Sources of Collinearity', Wiley, 1980. 244-261.
-       - Quinlan,R. (1993). Combining Instance-Based and Model-Based Learning. In Proceedings on the Tenth International Conference of Machine Learning, 236-243, University of Massachusetts, Amherst. Morgan Kaufmann.
+       - Belsley, Kuh & Welsch, 'Regression diagnostics: Identifying Influential Data and Sources of Collinearity', 
+       Wiley, 1980. 244-261.
+       - Quinlan,R. (1993). Combining Instance-Based and Model-Based Learning. In Proceedings on the Tenth International
+         Conference of Machine Learning, 236-243, University of Massachusetts, Amherst. Morgan Kaufmann.
 """
 
 
@@ -235,19 +237,38 @@ def main():
     print("Test set accuracy {:.2f}".format(clf.score(Xforge_test, yforge_test)))
 
     # lets visualize the decision boundary of this KNN classifier
-    fig, axes = plt.subplots(1, 3, figsize=(10, 3))
+    # fig, axes = plt.subplots(1, 3, figsize=(10, 3))
+    #
+    # for n_neighbors, ax in zip([1, 3, 9], axes):
+    #     clf = KNeighborsClassifier(n_neighbors=n_neighbors).fit(Xforge, yforge)
+    #     plot_2d_separator(clf, Xforge, fill=True, eps=0.5, ax=ax, alpha=.4)
+    #     discrete_scatter(Xforge[:, 0], Xforge[:, 1], yforge, ax=ax)
+    #     ax.set_title("{} neightbor(s)".format(n_neighbors))
+    #     ax.set_xlabel("feature 0")
+    #     ax.set_ylabel("feature 1")
+    #
+    # axes[0].legend(loc=3)
 
-    for n_neighbors, ax in zip([1, 3, 9], axes):
-        clf = KNeighborsClassifier(n_neighbors=n_neighbors).fit(Xforge, yforge)
-        plot_2d_separator(clf, Xforge, fill=True, eps=0.5, ax=ax, alpha=.4)
-        discrete_scatter(Xforge[:, 0], Xforge[:, 1], yforge, ax=ax)
-        ax.set_title("{} neightbor(s)".format(n_neighbors))
-        ax.set_xlabel("feature 0")
-        ax.set_ylabel("feature 1")
-
-    axes[0].legend(loc=3)
     # View plot in notebook
     # plt.show(fig)
+
+    Xcancer_train, Xcancer_test, ycancer_train, ycancer_test = train_test_split(cancer.data, cancer.target,
+                                                                                stratify=cancer.target, random_state=66)
+    training_accuracy, testing_accuracy = [], []
+
+    for n_neighbors in range(1, 11):
+        clf = KNeighborsClassifier(n_neighbors=n_neighbors)
+        clf.fit(Xcancer_train, ycancer_train)
+        training_accuracy.append(clf.score(Xcancer_train, ycancer_train))
+        testing_accuracy.append(clf.score(Xcancer_test, ycancer_test))
+
+    # View accuracy/testing plot in notebook
+    # plt.plot(range(1, 11), training_accuracy, label="training accuracy")
+    # plt.plot(range(1, 11), testing_accuracy, label="testing accuracy")
+    # plt.ylabel("Accuracy")
+    # plt.xlabel("n_neighbors")
+    # plt.legend()
+    # plt.show()
 
 
 if __name__ == '__main__':
